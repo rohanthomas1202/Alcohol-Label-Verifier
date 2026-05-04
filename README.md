@@ -40,7 +40,7 @@ Submitting an alcohol label for TTB approval means proving the artwork on the bo
 
 ```bash
 git clone https://github.com/rohanthomas1202/Alcohol-Label-Verifier.git
-cd Alcohol-Label-Verifier/label-verifier
+cd Alcohol-Label-Verifier
 npm install
 echo "ANTHROPIC_API_KEY=sk-ant-..." > .env.local
 npm run dev
