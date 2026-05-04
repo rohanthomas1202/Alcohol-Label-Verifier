@@ -77,14 +77,28 @@ const EXTRACTION_TOOL: Anthropic.Tool = {
   },
 }
 
+type SupportedMediaType = 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp'
+
+const SUPPORTED_MEDIA_TYPES: readonly SupportedMediaType[] = [
+  'image/jpeg',
+  'image/png',
+  'image/gif',
+  'image/webp',
+]
+
 export async function extractLabelFields(imageBase64: string): Promise<ExtractedFields> {
-  const base64Data = imageBase64.replace(/^data:image\/[a-z+]+;base64,/, '')
-  const mediaTypeMatch = imageBase64.match(/^data:(image\/[a-z+]+);base64,/)
-  const mediaType = (mediaTypeMatch?.[1] ?? 'image/jpeg') as
-    | 'image/jpeg'
-    | 'image/png'
-    | 'image/gif'
-    | 'image/webp'
+  const dataUrlMatch = imageBase64.match(/^data:([^;]+);base64,(.*)$/)
+  if (!dataUrlMatch) {
+    throw new Error('Invalid image data: expected data URL with base64 encoding')
+  }
+  const detectedType = dataUrlMatch[1]
+  const base64Data = dataUrlMatch[2]
+  if (!SUPPORTED_MEDIA_TYPES.includes(detectedType as SupportedMediaType)) {
+    throw new Error(
+      `Unsupported image type "${detectedType}". Supported: ${SUPPORTED_MEDIA_TYPES.join(', ')}`
+    )
+  }
+  const mediaType = detectedType as SupportedMediaType
 
   const response = await client.messages.create({
     model: 'claude-sonnet-4-6',
