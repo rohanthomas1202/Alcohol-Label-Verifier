@@ -17,6 +17,10 @@ interface BatchRow {
   error?: string
 }
 
+function normalizeFilename(name: string): string {
+  return name.toLowerCase().trim()
+}
+
 function parseCSV(text: string): Array<{ id: string; imageFilename: string } & ApplicationData> {
   const rows = parseCSVRows(text)
   if (rows.length < 2) return []
@@ -87,6 +91,7 @@ export function BatchPanel() {
   const [rows, setRows] = useState<BatchRow[]>([])
   const [running, setRunning] = useState(false)
   const [filter, setFilter] = useState<'all' | OverallStatus>('all')
+  const [uploadedNames, setUploadedNames] = useState<string[]>([])
   const imageMap = useRef<Map<string, File>>(new Map())
 
   const loadCSV = useCallback((file: File) => {
@@ -104,7 +109,7 @@ export function BatchPanel() {
           producerName: p.producerName,
           countryOfOrigin: p.countryOfOrigin,
         },
-        imageFile: imageMap.current.get(p.imageFilename) ?? null,
+        imageFile: imageMap.current.get(normalizeFilename(p.imageFilename)) ?? null,
         status: 'pending' as const,
       })))
     }
@@ -112,9 +117,14 @@ export function BatchPanel() {
   }, [])
 
   const loadImages = useCallback((files: FileList) => {
-    Array.from(files).forEach(f => imageMap.current.set(f.name, f))
+    const arr = Array.from(files)
+    arr.forEach(f => imageMap.current.set(normalizeFilename(f.name), f))
+    setUploadedNames(prev => Array.from(new Set([...prev, ...arr.map(f => f.name)])))
     setRows(prev =>
-      prev.map(row => ({ ...row, imageFile: imageMap.current.get(row.imageFilename) ?? row.imageFile }))
+      prev.map(row => ({
+        ...row,
+        imageFile: imageMap.current.get(normalizeFilename(row.imageFilename)) ?? row.imageFile,
+      }))
     )
   }, [])
 
@@ -177,6 +187,10 @@ export function BatchPanel() {
     rejected: rows.filter(r => r.result?.overallStatus === 'rejected').length,
   }
 
+  const expectedNames = new Set(rows.map(r => normalizeFilename(r.imageFilename)))
+  const unmatched = uploadedNames.filter(n => !expectedNames.has(normalizeFilename(n)))
+  const missingImages = rows.filter(r => !r.imageFile).map(r => r.imageFilename).filter(Boolean)
+
   const visible = rows.filter(r =>
     filter === 'all' || (r.status === 'done' && r.result?.overallStatus === filter)
   )
@@ -232,18 +246,46 @@ export function BatchPanel() {
           </label>
         </div>
 
-        {rows.length > 0 && (
-          <div className="mt-4 flex items-center justify-between">
-            <span className="text-sm text-gray-500">
-              {rows.length} labels · {rows.filter(r => r.imageFile).length} with images matched
-            </span>
-            <button
-              onClick={runBatch}
-              disabled={running || rows.filter(r => r.imageFile).length === 0}
-              className="bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold px-6 py-2 rounded-lg text-sm transition-colors"
-            >
-              {running ? `Verifying… (${done}/${rows.filter(r => r.imageFile).length})` : 'Run Batch'}
-            </button>
+        {(rows.length > 0 || uploadedNames.length > 0) && (
+          <div className="mt-4 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-500">
+                {rows.length} labels · {rows.filter(r => r.imageFile).length} with images matched
+                {uploadedNames.length > 0 && ` · ${uploadedNames.length} images uploaded`}
+              </span>
+              {rows.length > 0 && (
+                <button
+                  onClick={runBatch}
+                  disabled={running || rows.filter(r => r.imageFile).length === 0}
+                  className="bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold px-6 py-2 rounded-lg text-sm transition-colors"
+                >
+                  {running ? `Verifying… (${done}/${rows.filter(r => r.imageFile).length})` : 'Run Batch'}
+                </button>
+              )}
+            </div>
+            {unmatched.length > 0 && (
+              <div className="text-xs bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-amber-800">
+                <div className="font-medium mb-0.5">
+                  {unmatched.length} image{unmatched.length === 1 ? '' : 's'} didn&apos;t match any CSV row:
+                </div>
+                <div className="font-mono text-amber-700 break-all">
+                  {unmatched.slice(0, 5).join(', ')}{unmatched.length > 5 ? `, +${unmatched.length - 5} more` : ''}
+                </div>
+                <div className="mt-1 text-amber-600">
+                  Filename matching is case-insensitive but otherwise exact. Check the <code>image_filename</code> column in your CSV.
+                </div>
+              </div>
+            )}
+            {missingImages.length > 0 && rows.length > 0 && (
+              <div className="text-xs bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-gray-600">
+                <div className="font-medium mb-0.5">
+                  {missingImages.length} CSV row{missingImages.length === 1 ? '' : 's'} still need an image:
+                </div>
+                <div className="font-mono text-gray-500 break-all">
+                  {missingImages.slice(0, 5).join(', ')}{missingImages.length > 5 ? `, +${missingImages.length - 5} more` : ''}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
