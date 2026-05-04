@@ -1,6 +1,7 @@
 'use client'
 import { useCallback, useRef, useState } from 'react'
 import type { ApplicationData, OverallStatus, VerificationResponse } from '@/types'
+import { parseCSVRows, buildCSVRow } from '@/lib/csv'
 
 const CSV_TEMPLATE =
   'id,image_filename,brand_name,class_type,alcohol_content,net_contents,producer_name,country_of_origin\n' +
@@ -17,11 +18,10 @@ interface BatchRow {
 }
 
 function parseCSV(text: string): Array<{ id: string; imageFilename: string } & ApplicationData> {
-  const lines = text.trim().split('\n').filter(Boolean)
-  if (lines.length < 2) return []
-  const headers = lines[0].split(',').map(h => h.trim())
-  return lines.slice(1).map(line => {
-    const values = line.split(',').map(v => v.trim())
+  const rows = parseCSVRows(text)
+  if (rows.length < 2) return []
+  const headers = rows[0]
+  return rows.slice(1).map(values => {
     const row: Record<string, string> = {}
     headers.forEach((h, i) => { row[h] = values[i] ?? '' })
     return {
@@ -146,16 +146,22 @@ export function BatchPanel() {
   }
 
   function exportCSV() {
-    const header = 'id,overall_status,matched_fields,image_quality_issues,error\n'
+    const header = buildCSVRow(['id', 'overall_status', 'matched_fields', 'image_quality_issues', 'error'])
     const lines = rows.map(r => {
       if (r.status === 'done' && r.result) {
         const m = r.result.fields.filter(f => f.status === 'match').length
         const t = r.result.fields.length
-        return `${r.id},${r.result.overallStatus},${m}/${t},"${r.result.imageQualityIssues.join(';')}",`
+        return buildCSVRow([
+          r.id,
+          r.result.overallStatus,
+          `${m}/${t}`,
+          r.result.imageQualityIssues.join(';'),
+          '',
+        ])
       }
-      return `${r.id},${r.status},,,"${r.error ?? ''}"`
+      return buildCSVRow([r.id, r.status, '', '', r.error ?? ''])
     })
-    const blob = new Blob([header + lines.join('\n')], { type: 'text/csv' })
+    const blob = new Blob([[header, ...lines].join('\n') + '\n'], { type: 'text/csv' })
     const a = Object.assign(document.createElement('a'), {
       href: URL.createObjectURL(blob),
       download: 'verification-results.csv',
