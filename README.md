@@ -181,7 +181,7 @@ Unit tests cover the matcher, the Government Warning validator, and the CSV pars
 These are the calls made when filling in gaps from the brief and the stakeholder interviews:
 
 - **Standalone POC, no COLA integration.** Per Marcus's interview — this is a proof-of-concept, not a production integration. No persistence, no auth, no audit log.
-- **Canonical TTB warning text** is hardcoded in `gov-warning.ts` and used when the application omits a custom warning. The validator checks the exact text *plus* Jenny's two specific concerns: ALL-CAPS `GOVERNMENT WARNING:` prefix and bold weighting on that prefix.
+- **Canonical TTB warning text** is hardcoded in `gov-warning.ts` and used when the application omits a custom warning. The validator does word-for-word matching on the body (case- and smart-quote-insensitive — many real labels print the body in ALL CAPS) *plus* Jenny's two specific concerns: ALL-CAPS `GOVERNMENT WARNING:` prefix and bold weighting on that prefix, both checked separately.
 - **Bold/caps detection is delegated to Claude's vision model.** The matcher trusts the boolean flags in the extracted JSON. There's no client-side OCR cross-check.
 - **Case- and punctuation-insensitive matching** for free-text fields (Brand, Class/Type, Producer, Country). Dave's `STONE'S THROW` vs `Stone's Throw` example matches; smart quotes are folded to ASCII.
 - **Numeric fields parse before comparing.** `45%` matches `45.0% Alc./Vol.`; `750 mL` matches `0.75 L`. Falls back to text comparison only if parsing fails.

@@ -47,4 +47,25 @@ describe('checkGovernmentWarning', () => {
     expect(result.textMatch).toBe(false)
     expect(isGovWarningCompliant(result)).toBe(false)
   })
+
+  it('matches when label body is in ALL CAPS but words are identical', () => {
+    const allCaps = STANDARD_TTB_WARNING.toUpperCase()
+    const result = checkGovernmentWarning(STANDARD_TTB_WARNING, allCaps, true, true)
+    expect(result.textMatch).toBe(true)
+    expect(isGovWarningCompliant(result)).toBe(true)
+  })
+
+  it('still rejects title-case prefix even when body words match', () => {
+    const titleCasePrefix = STANDARD_TTB_WARNING.replace('GOVERNMENT WARNING:', 'Government Warning:')
+    const result = checkGovernmentWarning(STANDARD_TTB_WARNING, titleCasePrefix, false, true)
+    expect(result.textMatch).toBe(true)
+    expect(result.prefixCapsCorrect).toBe(false)
+    expect(isGovWarningCompliant(result)).toBe(false)
+  })
+
+  it('tolerates smart quotes and em-dashes in extracted text', () => {
+    const smart = STANDARD_TTB_WARNING.replace(/'/g, '’')
+    const result = checkGovernmentWarning(STANDARD_TTB_WARNING, smart, true, true)
+    expect(result.textMatch).toBe(true)
+  })
 })
