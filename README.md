@@ -31,7 +31,7 @@ Submitting an alcohol label for TTB approval means proving the artwork on the bo
 |---|---|
 | **Vision extraction** | Claude Sonnet 4.6 reads the label image via tool-use, returning structured JSON |
 | **Deterministic matching** | All field comparison happens in pure TypeScript — fully unit-tested |
-| **Government Warning check** | Verifies exact federal text, ALL-CAPS prefix, and bold weighting |
+| **Government Warning check** | Word-for-word body match plus separate ALL-CAPS and bold checks on the `GOVERNMENT WARNING:` prefix |
 | **Single + batch modes** | Verify one label, or run a CSV of applications against a folder of images |
 | **Concurrent processing** | Batch mode runs up to 5 verifications in flight with live progress |
 | **CSV export** | Download batch results in a regulator-friendly format |
@@ -74,7 +74,7 @@ Open <http://localhost:3000>.
            ▼
 ┌──────────────────────┐
 │  matcher.ts          │  pure TS field comparison
-│  + gov-warning.ts    │  exact-text validator
+│  + gov-warning.ts    │  warning body + prefix validator
 └──────────┬───────────┘
            │
            ▼
@@ -88,7 +88,7 @@ Open <http://localhost:3000>.
 
 | Verdict | Condition |
 |---|---|
-| **Approved** | Every required field matches, and the Government Warning passes its exact-text check (text + ALL-CAPS prefix + bold prefix) |
+| **Approved** | Every required field matches, and the Government Warning passes all three checks (word-for-word body + ALL-CAPS prefix + bold prefix) |
 | **Review** | Image quality issues (glare, blur, skew) may have affected extraction, or an optional field couldn't be confirmed |
 | **Rejected** | Any required field mismatches |
 
@@ -145,25 +145,24 @@ id,image_filename,brand_name,class_type,alcohol_content,net_contents,producer_na
 ## Project structure
 
 ```
-label-verifier/
-├── src/
-│   ├── app/
-│   │   ├── api/verify/route.ts      POST /api/verify
-│   │   ├── layout.tsx
-│   │   └── page.tsx                 main UI
-│   ├── components/
-│   │   ├── ApplicationForm.tsx
-│   │   ├── LabelUpload.tsx
-│   │   ├── VerificationResult.tsx
-│   │   └── BatchPanel.tsx
-│   ├── lib/
-│   │   ├── claude.ts                Anthropic client, prompt, tool schema
-│   │   ├── matcher.ts               normalized + numeric field comparison
-│   │   ├── gov-warning.ts           exact-text Government Warning validator
-│   │   └── csv.ts                   RFC-4180 quote-aware parser/writer
-│   └── types/index.ts               shared TS types
-├── __tests__/lib/                   unit tests (vitest)
-└── package.json
+src/
+├── app/
+│   ├── api/verify/route.ts      POST /api/verify
+│   ├── layout.tsx
+│   └── page.tsx                 main UI
+├── components/
+│   ├── ApplicationForm.tsx
+│   ├── LabelUpload.tsx
+│   ├── VerificationResult.tsx
+│   └── BatchPanel.tsx
+├── lib/
+│   ├── claude.ts                Anthropic client, prompt, tool schema
+│   ├── matcher.ts               normalized + numeric field comparison
+│   ├── gov-warning.ts           Government Warning validator (body + prefix caps + bold)
+│   └── csv.ts                   RFC-4180 quote-aware parser/writer
+└── types/index.ts               shared TS types
+__tests__/lib/                   unit tests (vitest)
+package.json
 ```
 
 ## Testing
@@ -196,7 +195,7 @@ These are the calls made when filling in gaps from the brief and the stakeholder
 - **Matcher is deterministic, prompt is not.** All field-comparison logic is pure TypeScript and unit-tested. Tuning matching rules doesn't require touching the prompt or re-evaluating against a test set.
 - **No persistence.** Reload the page and your batch results are gone. For a production version, results would land in a queue + DB. Out of scope for a POC.
 - **Batch concurrency is fixed at 5.** Higher would saturate the Anthropic rate limit on the default tier; lower would slow Janet's 200-label imports. 5 is a reasonable middle for the POC.
-- **Government Warning check is text-exact.** Truly creative violations (warning embedded in artwork, wrapped across two lines, off-brand wording) get caught — but a regulator-blessed list of acceptable variants would need to be maintained. None ship with this prototype.
+- **Government Warning check accepts only the canonical TTB wording.** Off-brand wording, missing clauses, or truly creative violations (warning embedded in artwork, wrapped across two lines) all fail the body match — which is the desired behavior, but a regulator-blessed list of acceptable variants would need to be maintained for edge cases. None ship with this prototype.
 - **Error responses occasionally use HTTP 500 for client-input errors** (e.g. malformed `imageBase64`). Cosmetic; doesn't affect the UI flow but should be cleaned up before production.
 
 ## Limits
