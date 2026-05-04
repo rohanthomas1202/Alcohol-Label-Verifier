@@ -201,36 +201,35 @@ export function BatchPanel() {
             ↓ Download CSV Template
           </button>
 
-          <div
-            className="border-2 border-dashed border-gray-300 rounded-lg py-4 text-center cursor-pointer hover:border-indigo-400 transition-colors"
-            onClick={() => document.getElementById('csv-input')?.click()}
-          >
+          <label className="border-2 border-dashed border-gray-300 rounded-lg py-4 text-center cursor-pointer hover:border-indigo-400 transition-colors block">
             <div className="text-2xl mb-1">📄</div>
             <div className="text-sm text-gray-500">Upload filled CSV</div>
             <input
-              id="csv-input"
               type="file"
-              accept=".csv"
+              accept=".csv,text/csv"
               className="hidden"
-              onChange={e => { const f = e.target.files?.[0]; if (f) loadCSV(f) }}
+              onChange={e => {
+                const f = e.target.files?.[0]
+                if (f) loadCSV(f)
+                e.target.value = ''
+              }}
             />
-          </div>
+          </label>
 
-          <div
-            className="border-2 border-dashed border-gray-300 rounded-lg py-4 text-center cursor-pointer hover:border-indigo-400 transition-colors"
-            onClick={() => document.getElementById('images-input')?.click()}
-          >
+          <label className="border-2 border-dashed border-gray-300 rounded-lg py-4 text-center cursor-pointer hover:border-indigo-400 transition-colors block">
             <div className="text-2xl mb-1">🖼</div>
             <div className="text-sm text-gray-500">Upload label images</div>
             <input
-              id="images-input"
               type="file"
               accept="image/*"
               multiple
               className="hidden"
-              onChange={e => { if (e.target.files) loadImages(e.target.files) }}
+              onChange={e => {
+                if (e.target.files) loadImages(e.target.files)
+                e.target.value = ''
+              }}
             />
-          </div>
+          </label>
         </div>
 
         {rows.length > 0 && (

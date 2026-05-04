@@ -33,7 +33,7 @@ export function ApplicationForm({ value, onChange, disabled }: Props) {
             onChange={update(key)}
             disabled={disabled}
             placeholder={placeholder}
-            className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-50 disabled:text-gray-400"
+            className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-50 disabled:text-gray-400"
           />
         </div>
       ))}
