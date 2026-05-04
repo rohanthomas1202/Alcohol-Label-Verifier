@@ -40,5 +40,12 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# superpowers
+# superpowers / local tooling
 .superpowers/
+.claude/
+
+# Word lockfiles
+~$*
+
+# take-home brief (local reference only)
+Take-Home Project_ AI-Powered Alcohol Label Verification App.docx
