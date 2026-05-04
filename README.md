@@ -11,7 +11,9 @@ Upload an application form and a label image — get a field-by-field compliance
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-4-38BDF8?logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
 [![Tests](https://img.shields.io/badge/tests-vitest-6E9F18?logo=vitest&logoColor=white)](https://vitest.dev)
 
-[Quickstart](#quickstart) · [How it works](#how-it-works) · [API](#api) · [Testing](#testing) · [Deploy](#deploy)
+**[Live demo →](https://alcohol-label-verifier-two.vercel.app)**
+
+[Quickstart](#quickstart) · [How it works](#how-it-works) · [API](#api) · [Assumptions](#assumptions) · [Trade-offs](#trade-offs) · [Deploy](#deploy)
 
 </div>
 
@@ -174,6 +176,29 @@ npm run lint        # eslint
 
 Unit tests cover the matcher, the Government Warning validator, and the CSV parser/writer — i.e. all the deterministic logic. The Claude call is intentionally *not* mocked into the test suite; the matcher is tested against fixed `ExtractedFields` inputs.
 
+## Assumptions
+
+These are the calls made when filling in gaps from the brief and the stakeholder interviews:
+
+- **Standalone POC, no COLA integration.** Per Marcus's interview — this is a proof-of-concept, not a production integration. No persistence, no auth, no audit log.
+- **Canonical TTB warning text** is hardcoded in `gov-warning.ts` and used when the application omits a custom warning. The validator checks the exact text *plus* Jenny's two specific concerns: ALL-CAPS `GOVERNMENT WARNING:` prefix and bold weighting on that prefix.
+- **Bold/caps detection is delegated to Claude's vision model.** The matcher trusts the boolean flags in the extracted JSON. There's no client-side OCR cross-check.
+- **Case- and punctuation-insensitive matching** for free-text fields (Brand, Class/Type, Producer, Country). Dave's `STONE'S THROW` vs `Stone's Throw` example matches; smart quotes are folded to ASCII.
+- **Numeric fields parse before comparing.** `45%` matches `45.0% Alc./Vol.`; `750 mL` matches `0.75 L`. Falls back to text comparison only if parsing fails.
+- **Image quality issues lower the verdict to `review`, not `rejected`.** Dave's "you need judgment" point — the tool surfaces glare/blur/skew and asks the agent, rather than auto-rejecting.
+- **No PII storage.** Image is processed in-memory, sent once to the Anthropic API, and discarded. Marcus's "don't do anything crazy" — no S3, no DB.
+- **Single Anthropic outbound call** per verification. Marcus's note about TTB's firewall blocking outbound traffic — this keeps the integration surface to one well-known endpoint.
+- **Sub-5s latency target** (Sarah's hard requirement from the prior pilot). System prompt and tool schema are cached via Anthropic prompt caching; cold call ~3-4s, warm ~2s.
+
+## Trade-offs
+
+- **Vision extraction is a black box.** Claude reads the label and returns JSON. If extraction is wrong, the match is wrong. Mitigation: image quality flags + a `review` verdict instead of silent failure.
+- **Matcher is deterministic, prompt is not.** All field-comparison logic is pure TypeScript and unit-tested. Tuning matching rules doesn't require touching the prompt or re-evaluating against a test set.
+- **No persistence.** Reload the page and your batch results are gone. For a production version, results would land in a queue + DB. Out of scope for a POC.
+- **Batch concurrency is fixed at 5.** Higher would saturate the Anthropic rate limit on the default tier; lower would slow Janet's 200-label imports. 5 is a reasonable middle for the POC.
+- **Government Warning check is text-exact.** Truly creative violations (warning embedded in artwork, wrapped across two lines, off-brand wording) get caught — but a regulator-blessed list of acceptable variants would need to be maintained. None ship with this prototype.
+- **Error responses occasionally use HTTP 500 for client-input errors** (e.g. malformed `imageBase64`). Cosmetic; doesn't affect the UI flow but should be cleaned up before production.
+
 ## Limits
 
 - Image upload: JPEG / PNG / WebP / GIF, max 5 MB (enforced client + server)
@@ -182,7 +207,7 @@ Unit tests cover the matcher, the Government Warning validator, and the CSV pars
 
 ## Deploy
 
-Vercel is the path of least resistance — `next build` works out of the box.
+Live at <https://alcohol-label-verifier-two.vercel.app>. Vercel is the path of least resistance — `next build` works out of the box.
 
 ```bash
 vercel --prod
