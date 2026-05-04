@@ -165,6 +165,16 @@ __tests__/lib/                   unit tests (vitest)
 package.json
 ```
 
+## Sample test data
+
+`samples/` ships with 12 synthetic labels and a CSV ready to drop into Batch mode for an end-to-end demo.
+
+```bash
+npm run gen-labels   # regenerate samples/images/*.png from scripts/gen-labels.ts
+```
+
+The set covers the matcher's full surface: clean approvals, ABV / class / brand mismatches, unit-converted net contents (`0.75 L` ↔ `750 mL`), Dave's case-insensitive `STONE'S THROW` / `Stone's Throw` example, large-format bottles, missing warning, title-case `Government Warning:` prefix (Jenny's regression case), all-caps warning body, and substituted "Drink Responsibly" wording. `samples/EXPECTED.md` documents the expected verdict for each.
+
 ## Testing
 
 ```bash

@@ -1,0 +1,13 @@
+id,image_filename,brand_name,class_type,alcohol_content,net_contents,producer_name,country_of_origin
+001,label_001.png,OLD TOM DISTILLERY,Kentucky Straight Bourbon Whiskey,45% Alc./Vol. (90 Proof),750 mL,,
+002,label_002.png,Stone's Throw,Vodka,40% Alc./Vol. (80 Proof),750 mL,,
+003,label_003.png,DESERT MOON,Tequila Blanco,38% Alc./Vol.,750 mL,,
+004,label_004.png,NORTH RIDGE,Single Malt Scotch Whisky,43% Alc./Vol.,750 mL,,
+005,label_005.png,STORM CHASER,Spiced Rum,35% Alc./Vol.,750 mL,,
+006,label_006.png,HIGHLAND BREW,India Pale Ale,6.5% Alc./Vol.,12 fl oz,,
+007,label_007.png,CASA RIOJA,Tempranillo Red Wine,13.5% Alc./Vol.,750 mL,,Spain
+008,label_008.png,BLUE PIER,Imported Lager,4.5% Alc./Vol.,12 fl oz,,Mexico
+009,label_009.png,RIVER HOLLOW,Bourbon,50% Alc./Vol. (100 Proof),1.75 L,,
+010,label_010.png,OAK & EMBER,Reserve Whiskey,47% Alc./Vol.,750 mL,,
+011,label_011.png,MIDNIGHT HARVEST,Cabernet Sauvignon,14% Alc./Vol.,750 mL,,United States
+012,label_012.png,IRON GATE,London Dry Gin,47.3% Alc./Vol. (94.6 Proof),750 mL,,
